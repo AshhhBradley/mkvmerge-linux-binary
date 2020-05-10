@@ -1,0 +1,848 @@
+'\" t
+.\"     Title: mkvextract
+.\"    Author: Moritz Bunkus <moritz@bunkus.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 2019-12-06
+.\"    Manual: 用户命令
+.\"    Source: MKVToolNix 41.0.0
+.\"  Language: Chinese
+.\"
+.TH "MKVEXTRACT" "1" "2019\-12\-06" "MKVToolNix 41\&.0\&.0" "用户命令"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "名称"
+mkvextract \- 将 Matroska(TM) 文件中的轨道提取为另外的文件
+.SH "概要"
+.HP \w'\fBmkvextract\fR\ 'u
+\fBmkvextract\fR {输入文件名} {模式1} [选项] [提取规格1] [模式2] [选项] [提取规格2] [\&...]
+.SH "说明"
+.PP
+该程序可将
+Matroska(TM)\ \&文件的指定部分提取为其他有用的格式。第一个参数是输入文件名称，该文件必须为
+Matroska(TM)\ \&文件。
+.PP
+其余参数可切换到特定提取模式、更改当前活动模式的选项、指定要将什么内容提取到哪些文件。单次调用 mkvextract 可同时使用多种模式，以便只读取一遍就提取多项内容。 大多数选项只能在特定模式下使用，少数选项可用于所有模式。
+.PP
+目前支持提取
+tracks 轨道、tags 标签、attachments 附件、chapters 章节、cue 表单、timestamps 时间戳
+以及
+cues。
+.SS "通用选项"
+.PP
+以下选项在所有模式下可用，只在本段落讲一遍，不赘述。
+.PP
+\fB\-f\fR, \fB\-\-parse\-fully\fR
+.RS 4
+设置解析模式为 \*(Aqfull（完整）\*(Aq。默认的解析模式不解析整个文件，而是使用元定位元素确定输入文件中所需元素的位置。99% 的情况下这已经足够。但如果碰到不含元定位元素或者元定位元素损坏的文件，用户可能得考虑使用此模式。完整扫描文件可能要花费几分钟，而快速扫描只需要几秒钟。
+.RE
+.PP
+\fB\-\-command\-line\-charset\fR \fI字符集\fR
+.RS 4
+设定在命令行给出的字符串的字符集，用于转为其他字符集。默认为系统当前区域设置中所给定的字符集。
+.RE
+.PP
+\fB\-\-output\-charset\fR \fI字符集\fR
+.RS 4
+设置输出的字符串应被转换到何种字符集。默认为系统当前区域设置中所给定的字符集。
+.RE
+.PP
+\fB\-r\fR, \fB\-\-redirect\-output\fR \fI文件名\fR
+.RS 4
+将所有信息输出至文件
+\fI文件名\fR
+而不是在命令行显示。尽管该操作可以用输出重定向轻松实现，但在某些情况下还需要靠它：如当终端在写入文件之前重新解释（覆盖输出）时。将优先使用通过
+\fB\-\-output\-charset\fR
+设定的字符集。
+.RE
+.PP
+\fB\-\-flush\-on\-close\fR
+.RS 4
+让程序在关闭以写入模式打开的文件时，强制将内存中已缓存的所有数据写入到存储设备。可用于在电源中断时避免数据损失，或规避操作系统或驱动程序的特定问题。缺点是混流耗时更长，因为 mkvmerge 在退出前需要等待所有数据写入存储设备。关于优劣的深入讨论，请参见 MKVToolNix bug 跟踪平台中的问题 #2469 与问题 #2480。
+.RE
+.PP
+\fB\-\-ui\-language\fR \fI语言代码\fR
+.RS 4
+强制使用
+\fI语言代码\fR
+所对应的翻译 (例如 \*(Aqde_DE\*(Aq 表示德文翻译)。在
+\fI语言代码\fR
+处输入 \*(Aqlist\*(Aq 可让程序输出可用翻译的列表。
+.RE
+.PP
+\fB\-\-abort\-on\-warnings\fR
+.RS 4
+让程序在出现警告时即中止。程序的退出代码将返回 1。
+.RE
+.PP
+\fB\-\-debug\fR \fI主题\fR
+.RS 4
+为特定功能开启调试。该选项仅对开发者有用。
+.RE
+.PP
+\fB\-\-engage\fR \fI功能\fR
+.RS 4
+开启实验性功能。可用功能列表可通过
+\fBmkvextract \-\-engage list\fR
+得到。这些功能在正常情况下不应该使用。
+.RE
+.PP
+\fB\-\-gui\-mode\fR
+.RS 4
+打开 GUI 模式。该模式下，将输出特殊格式的行，告知目前受控的 GUI 的行为。这些消息遵从格式「#GUI#消息」。消息可能包括键值对，如「#GUI#消息#键1=值1#键2=值2\&...」。消息内容及键的内容不作翻译，总是以英语输出。
+.RE
+.PP
+\fB\-v\fR, \fB\-\-verbose\fR
+.RS 4
+使输出信息更详尽，且每当读取到重要的
+Matroska(TM)
+元素时就将其显示。
+.RE
+.PP
+\fB\-h\fR, \fB\-\-help\fR
+.RS 4
+显示用法信息并退出。
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+显示版本信息并退出。
+.RE
+.PP
+\fB@\fR\fI选项文件\&.json\fR
+.RS 4
+从文件
+\fI选项文件\fR
+读取其他命令行参数。关于支持的选项文件格式的详细说明，请参见
+\fBmkvmerge\fR(1)
+手册的\(lq选项文件\(rq段落。
+.RE
+.SS "轨道提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBtracks\fR\fR\fB \fR\fB[\fI选项\fR]\fR\fB \fR\fB\fITID1:目标文件名1\fR\fR\fB \fR\fB[\fITID2:目标文件名2\fR \&.\&.\&.]\fR
+.PP
+以下命令行在 \*(Aqtracks\*(Aq 轨道提取模式下对各轨道可用。它们应当在所应用到的轨道指令（参阅下文）之前出现。
+.PP
+\fB\-c\fR \fI字符集\fR
+.RS 4
+设定下一个字幕轨应被转换为哪一字符集。仅当后面的轨道 ID 对应文本字幕轨时有效。默认为 UTF\-8。
+.RE
+.PP
+\fB\-\-blockadd\fR \fI层级\fR
+.RS 4
+只保留低于或等于此层级的 BlockAdditions 附加块。默认保留所有层级。 本选项仅影响特定类别的编解码器，如 WAVPACK4。
+.RE
+.PP
+\fB\-\-cuesheet\fR
+.RS 4
+让
+\fBmkvextract\fR(1)
+根据下一轨道的标签数据与章节信息提取出
+CUE
+表单，输出文件名为轨道的输出名后接 \*(Aq\&.cue\*(Aq 扩展名。
+.RE
+.PP
+\fB\-\-raw\fR
+.RS 4
+将原始数据提取为文件，输出文件的周围没有任何容器数据。 与
+\fB\-\-fullraw\fR
+标记不同的是，此标记不会将
+CodecPrivate
+元素的内容写入输出文件。 此模式对所有
+CodecIDs
+有效，即使是
+\fBmkvextract\fR(1)
+不支持处理的，然而生成的文件可能无法使用。
+.RE
+.PP
+\fB\-\-fullraw\fR
+.RS 4
+提取原始数据，输出文件的周围没有任何容器数据。 如果轨道包含
+CodecPrivate
+编解码器私有元素，它的内容将先被写入文件。 此模式对所有
+CodecIDs
+有效，即使是
+\fBmkvextract\fR(1)
+不支持的那些，但是生成的文件可能无法使用。
+.RE
+.PP
+\fITID:输出文件名\fR
+.RS 4
+如果输入文件中存在 ID 为
+\fITID\fR
+的轨道，则将其提取为文件
+\fI输出文件名\fR。本选项可多次给出。轨道 ID 与
+\fBmkvmerge\fR(1)
+的
+\fB\-\-identify\fR
+选项所输出的相同。
+.sp
+每个输出文件名只能用一次。但 RealAudio 与 RealVideo 轨道例外。如果您为不同轨道使用了同样的输出文件名，这些轨道将被存入同一个文件中。示例：
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ mkvextract 输入\&.mkv tracks 0:视频\&.h264 2:输出两个vobsub轨道\&.idx 3:输出两个vobsub轨道\&.idx
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.SS "附件提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBattachments\fR\fR\fB \fR\fB[\fI选项\fR]\fR\fB \fR\fB\fIAID1:输出文件名1\fR\fR\fB \fR\fB[\fIAID2:输出文件名2\fR \&.\&.\&.]\fR
+.PP
+\fIAID\fR:\fI输出文件名\fR
+.RS 4
+如果输入文件中存在 ID 为
+\fIAID\fR
+的附件，则将其提取为文件
+\fI输出文件名\fR。如果
+\fI输出文件名\fR
+处留空，将使用所用
+Matroska(TM)
+文件中的附件名称。本选项可多次给出。附件 ID 与
+\fBmkvmerge\fR(1)
+的
+\fB\-\-identify\fR
+选项所输出的相同。
+.RE
+.SS "章节提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBchapters\fR\fR\fB[\fI选项\fR]\fR\fB \fR\fB\fI输出文件名\&.xml\fR\fR
+.PP
+\fB\-s\fR, \fB\-\-simple\fR
+.RS 4
+将章节信息以
+OGM
+tools 所用的简单格式 (CHAPTER01=\&.\&.\&., CHAPTER01NAME=\&.\&.\&.) 导出。此模式下部分信息将被废弃。默认以
+XML
+格式输出章节。
+.RE
+.PP
+\fB\-\-simple\-language\fR \fI语言\fR
+.RS 4
+若启用简化格式，\fBmkvextract\fR(1)
+对于发现的每个章节单位，均只输出单个条目，即使该章节单位包含多个章节名称。\fBmkvextract\fR(1)
+默认对每个章节单位使用发现的第一个章节名称，而不考察其语言。
+.sp
+本选项允许用户决定，在章节单位包含多个章节名称时，应该输出哪些章节名称。\fI语言\fR
+参数必须为 ISO 639\-1 或 ISO 639\-2 代码。
+.RE
+.PP
+章节将写入指定的输出文件。默认使用
+\fBmkvmerge\fR(1)
+能理解的
+XML
+格式。如果文件中没有发现章节条目，则不会创建输出文件。
+.SS "标签提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBtags\fR\fR\fB \fR\fB[\fI选项\fR]\fR\fB \fR\fB\fI输出文件名\&.xml\fR\fR
+.PP
+标签将写入指定的输出文件，使用
+\fBmkvmerge\fR(1)
+能理解的
+XML
+格式。如果文件中没有发现标签条目，则不会创建输出文件。
+.SS "Cue 表单提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBcuesheet\fR\fR\fB \fR\fB[\fI选项\fR]\fR\fB \fR\fB\fI输出文件名\&.cue\fR\fR
+.PP
+cue 表单将写入指定的输出文件。如果文件中没有发现章节或标签条目，则不会创建输出文件。
+.SS "时间戳提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBtimestamps_v2\fR\fR\fB \fR\fB[\fI选项\fR]\fR\fB \fR\fB\fITID1:目标文件名1\fR\fR\fB \fR\fB[\fITID2:目标文件名2\fR \&.\&.\&.]\fR
+.PP
+\fITID:输出文件名\fR
+.RS 4
+如果输入文件中存在 ID 为
+\fITID\fR
+的轨道，则将其时间戳提取为文件
+\fI输出文件名\fR。本选项可多次给出。轨道 ID 与
+\fBmkvmerge\fR(1)
+的
+\fB\-\-identify\fR
+选项所输出的相同。
+.sp
+示例:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ mkvextract 输入\&.mkv timestamps_v2 1:时间戳\-轨1\&.txt 2:时间戳\-轨2\&.txt
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.SS "cue 提取模式"
+.PP
+语法:
+\fBmkvextract \fR\fB\fI输入文件名\fR\fR\fB \fR\fB\fBcues\fR\fR\fB \fR\fB[\fI选项\fR]\fR\fB \fR\fB\fITID1:目标文件名1\fR\fR\fB \fR\fB[\fITID2:目标文件名2\fR \&.\&.\&.]\fR
+.PP
+\fITID:目标文件名\fR
+.RS 4
+若输入文件中存在，则提取 ID 为
+\fITID\fR
+的轨道的 cue 并保存到
+\fI输出文件名\fR
+中。本选项可多次给出。轨道 ID 与
+\fBmkvmerge\fR(1)
+的
+\fB\-\-identify\fR
+选项所输出的一致，而非
+CueTrack
+元素中所包含的数字。
+.RE
+.PP
+输出的格式为简单文本格式: 每个
+CuePoint
+及
+键=值
+对占一行。如果
+CuePoint
+中未出现某个可选元素 (如
+CueDuration) 则将输出短横作为其数值。
+.PP
+示例:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+timestamp=00:00:13\&.305000000 duration=\- cluster_position=757741 relative_position=11
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+可用的关键词包括：
+.PP
+时间戳
+.RS 4
+cue point 的时间戳，精确到纳秒。格式为
+HH:MM:SS\&.nnnnnnnnn。该元素必有值。
+.RE
+.PP
+duration
+.RS 4
+cue point 的时长，精确到纳秒。
+.RE
+.PP
+cluster_position
+.RS 4
+Matroska(TM)
+文件中指向相关元素的簇的起始点的绝对位置，单位为字节。
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fB注意\fR
+.ps -1
+.br
+Matroska(TM)
+文件中，CueClusterPosition
+相对于剪辑数据的起始偏移。而
+\fBmkvextract\fR(1)
+的 cue 提取模式所输出的值，已经计入该偏移，因此是从文件开头起的绝对偏移。
+.sp .5v
+.RE
+.RE
+.PP
+relative_position
+.RS 4
+cue point 所指向的
+BlockGroup
+或
+SimpleBlock
+元素的起始点在簇内的绝对位置，单位为字节。
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fB注意\fR
+.ps -1
+.br
+Matroska(TM)
+文件中，CueRelativePosition
+相对于簇数据的起始偏移。而
+\fBmkvextract\fR(1)
+的 cue 提取模式所输出的值，相对于簇的 ID。在文件内的绝对位置可以通过将
+cluster_position
+与
+relative_position
+相加得出。
+.sp .5v
+.RE
+.RE
+.PP
+示例:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ mkvextract 输入\&.mkv cues 1:cues\-轨1\&.txt 2:cues\-轨2\&.txt
+.fi
+.if n \{\
+.RE
+.\}
+.SH "示例"
+.PP
+同时提取章节与标签，并按其相应的
+XML
+格式保存:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ mkvextract 影片\&.mkv chapters 影片章节\&.xml tags 影片标签\&.xml
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+同时提取一些轨道及其对应的时间戳:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ mkvextract "另一部影片\&.mkv" tracks 0:video\&.h265 "1:主音轨\&.aac" "2:导演评论\&.aac" timestamps_v2 "0:视频时间戳\&.txt" "1:主音轨时间戳\&.txt" "2:导演评论音轨时间戳\&.txt"
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+以 Ogg/OGM 格式提取章节，并将一条文本字幕轨道用另一种字符集重新编码:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ mkvextract "我的影片\&.mkv" chapters \-\-simple "我的章节\&.txt" tracks \-c MS\-ANSI "2:我的字幕\&.srt"
+.fi
+.if n \{\
+.RE
+.\}
+.SH "文本文件与字符集转换"
+.PP
+关于 MKVToolNix 套件中所有工具如何处理字符集转换、输入/输出编码、命令行编码及控制台编码的深入讨论，请参见
+\fBmkvmerge\fR(1)
+手册中相对应名称的段落。
+.SH "输出文件格式"
+.PP
+输出文件的格式取决于轨道的类型，而不是输出文件名的扩展名。目前支持以下轨道类型：
+.PP
+A_AAC/MPEG2/*, A_AAC/MPEG4/*, A_AAC
+.RS 4
+所有
+AAC
+文件将被输出为
+AAC
+文件，其中数据包前有
+ADTS
+头。ADTS
+头将不含反增强字段（deprecated emphasis field）。
+.RE
+.PP
+A_AC3, A_EAC3
+.RS 4
+这些会提取为原始
+AC\-3
+文件。
+.RE
+.PP
+A_ALAC
+.RS 4
+ALAC
+轨道将输出为
+CAF
+文件。
+.RE
+.PP
+A_DTS
+.RS 4
+这些会提取为原始
+DTS
+文件。
+.RE
+.PP
+A_FLAC
+.RS 4
+FLAC
+轨道将输出为原始的
+FLAC
+文件。
+.RE
+.PP
+A_MPEG/L2
+.RS 4
+MPEG\-1 Audio Layer II 流将提取为原始的
+MP2
+文件。
+.RE
+.PP
+A_MPEG/L3
+.RS 4
+这些会提取为原始
+MP3
+文件。
+.RE
+.PP
+A_OPUS
+.RS 4
+Opus(TM)
+轨道将输出为
+OggOpus(TM)
+文件。
+.RE
+.PP
+A_PCM/INT/LIT, A_PCM/INT/BIG
+.RS 4
+原始
+PCM
+数据将写入
+WAV
+文件。大端序整数数据在此期间将被转为小端序数据。
+.RE
+.PP
+A_REAL/*
+.RS 4
+RealAudio(TM)
+轨道将被输出为
+RealMedia(TM)
+文件。
+.RE
+.PP
+A_TRUEHD, A_MLP
+.RS 4
+这些会提取为原始
+TrueHD/MLP
+文件。
+.RE
+.PP
+A_TTA1
+.RS 4
+TrueAudio(TM)
+轨道将被输出为
+TTA
+文件。请注意，由于
+Matroska(TM)
+时间戳的精度限制，解开来的文件的头部有两个字段不同：\fIdata_length\fR
+(文件的总采样数) 与
+CRC。
+.RE
+.PP
+A_VORBIS
+.RS 4
+Vorbis 音频将被输出为
+OggVorbis(TM)
+文件。
+.RE
+.PP
+A_WAVPACK4
+.RS 4
+WavPack(TM)
+轨道将输出为
+WV
+文件。
+.RE
+.PP
+S_HDMV/PGS
+.RS 4
+PGS
+字幕将输出为
+SUP
+文件。
+.RE
+.PP
+S_HDMV/TEXTST
+.RS 4
+TextST
+字幕将以转为
+\fBmkvmerge\fR(1)
+与
+\fBmkvextract\fR(1)
+发明的特殊格式写入。
+.RE
+.PP
+S_KATE
+.RS 4
+Kate(TM)
+流将以
+Ogg(TM)
+为容器输出。
+.RE
+.PP
+S_TEXT/SSA, S_TEXT/ASS, S_SSA, S_ASS
+.RS 4
+SSA
+与
+ASS
+文本字幕将分别被输出为
+SSA/ASS
+文件。
+.RE
+.PP
+S_TEXT/UTF8, S_TEXT/ASCII
+.RS 4
+简单的文本字幕将被输出为
+SRT
+文件。
+.RE
+.PP
+S_VOBSUB
+.RS 4
+VobSub(TM)
+字幕将输出为
+SUB
+文件及相应的索引文件（后缀为
+IDX）。
+.RE
+.PP
+S_TEXT/USF
+.RS 4
+USF
+文本字幕将输出为
+USF
+文件。
+.RE
+.PP
+S_TEXT/WEBVTT
+.RS 4
+WebVTT
+字幕文件将写入
+WebVTT
+文件。
+.RE
+.PP
+V_MPEG1, V_MPEG2
+.RS 4
+MPEG\-1
+与
+MPEG\-2
+视频轨道将输出为
+MPEG
+基本流（ES）。
+.RE
+.PP
+V_MPEG4/ISO/AVC
+.RS 4
+H\&.264
+/
+AVC
+视频轨将被输出为
+H\&.264
+基本流，可以使用如
+GPAC(TM)
+工具包中的
+MP4Box(TM)
+作进一步处理。
+.RE
+.PP
+V_MPEG4/ISO/HEVC
+.RS 4
+H\&.265
+/
+HEVC
+视频轨道将输出为
+H\&.265
+基本流（ES），该格式可使用
+GPAC(TM)
+软件包中的
+MP4Box(TM)
+作进一步处理。
+.RE
+.PP
+V_MS/VFW/FOURCC
+.RS 4
+使用此
+CodecID
+且
+FPS
+恒定的视频轨将被输出为
+AVI
+文件。
+.RE
+.PP
+V_REAL/*
+.RS 4
+RealVideo(TM)
+轨道将被输出为
+RealMedia(TM)
+文件。
+.RE
+.PP
+V_THEORA
+.RS 4
+Theora(TM)
+流将以
+Ogg(TM)
+为容器输出
+.RE
+.PP
+V_VP8, V_VP9
+.RS 4
+VP8
+/
+VP9
+轨道将输出为
+IVF
+文件。
+.RE
+.PP
+标签
+.RS 4
+标签将被转换为
+XML
+格式。此格式与
+\fBmkvmerge\fR(1)
+所支持读取的标签格式相同。
+.RE
+.PP
+附件
+.RS 4
+附件将被以原样输出。不会进行任何转换。
+.RE
+.PP
+章节
+.RS 4
+章节将被转换为
+XML
+格式。此格式与
+\fBmkvmerge\fR(1)
+所支持读取的章节格式相同。您也可以选择输出精简的简单
+OGM
+格式。
+.RE
+.PP
+时间戳
+.RS 4
+时间戳会先被排序，然后以 timestamp v2 格式文件输出，该文件适用于
+\fBmkvmerge\fR(1)。不支持提取为其他格式 (v1, v3 或 v4)。
+.RE
+.SH "退出代码"
+.PP
+\fBmkvextract\fR(1)
+退出时会返回以下三个退出代码中的一个：
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fB0\fR
+\-\- 此退出代码说明已成功完成提取。
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fB1\fR
+\-\- 这种情况下
+\fBmkvextract\fR(1)
+至少输出了一条警告信息，但提取并未因之中止。 警告信息以文字 \*(Aq警告:\*(Aq 为前缀。根据问题的不同，生成的文件可能是好的，也可能不是。 强烈建议用户检查警告信息以及生成的文件。
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fB2\fR
+\-\- 此退出代码用于错误发生之后。
+\fBmkvextract\fR(1)
+在输出错误信息后即中断处理。错误信息可能是错误的命令行参数，也可能是损坏文件的读取/写入错误。
+.RE
+.SH "环境变量"
+.PP
+\fBmkvextract\fR(1)
+使用决定系统区域设置的默认变量 (如
+\fILANG\fR
+与
+\fILC_*\fR
+族)。其他变量包括:
+.PP
+\fIMKVEXTRACT_DEBUG\fR, \fIMKVTOOLNIX_DEBUG\fR 及其缩略形式 \fIMTX_DEBUG\fR
+.RS 4
+内容将被当作通过
+\fB\-\-debug\fR
+选项传递的参数对待。
+.RE
+.PP
+\fIMKVEXTRACT_ENGAGE\fR, \fIMKVTOOLNIX_ENGAGE\fR 及其缩略形式 \fIMTX_ENGAGE\fR
+.RS 4
+内容将被当作通过
+\fB\-\-engage\fR
+选项传递的参数对待。
+.RE
+.SH "参阅"
+.PP
+\fBmkvmerge\fR(1),
+\fBmkvinfo\fR(1),
+\fBmkvpropedit\fR(1),
+\fBmkvtoolnix-gui\fR(1)
+.SH "网络"
+.PP
+最新版本总可以在
+\m[blue]\fBMKVToolNix 主页\fR\m[]\&\s-2\u[1]\d\s+2
+找到。
+.SH "作者"
+.PP
+\fBMoritz Bunkus\fR <\&moritz@bunkus\&.org\&>
+.RS 4
+开发者
+.RE
+.SH "备注"
+.IP " 1." 4
+MKVToolNix 主页
+.RS 4
+\%https://mkvtoolnix.download/
+.RE
